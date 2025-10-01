@@ -22,12 +22,14 @@ namespace Sclean.Commands
         [Permission(MyPromoteLevel.Admin)]
         public void Info()
         {
+            var npcInfo = ScleanPlugin.Instance.Config.IgnoreProtectedNpc ? "Trade factions and Factorum" : "No additional protected grids";
             var sb = new StringBuilder();
             sb.AppendLine($"Information {ScleanPlugin.Instance.Version}");
             sb.AppendLine($"Beacon SubtypeId ends with: {ScleanPlugin.Instance.Config.BeaconSubtype}");
             sb.AppendLine("Ranges");
             sb.AppendLine($"  Player: {ScleanPlugin.Instance.Config.PlayerRange}");
             sb.AppendLine($"  Scrap Beacon: {ScleanPlugin.Instance.Config.ScrapBeaconRange}");
+            sb.AppendLine($"Protected NPC Grids: {npcInfo}");
 
             Context.Respond(sb.ToString());
         }
@@ -39,7 +41,7 @@ namespace Sclean.Commands
             Log.Info("delete command");
             CommandImp.GridData gridData = CommandImp.FilteredGridData();
 
-            var c = deleteGrids(gridData, false, false, false, true);
+            var c = deleteGrids(gridData, false, false, false, false, true);
 
             Context.Respond($"Deleted {c} grids matching the Scrapyard rules.");
             Log.Info($"Sclean deleted {c} grids matching the Scrapyard rules.");
@@ -53,31 +55,31 @@ namespace Sclean.Commands
             Log.Info("delete command");
             CommandImp.GridData gridData = CommandImp.FilteredGridData();
 
-            var c = deleteGrids(gridData, true, false, false, true);
+            var c = deleteGrids(gridData, true, false, false, false, true);
 
             Context.Respond($"Deleted {c} grids matching the Scrapyard rules.");
             Log.Info($"Sclean deleted {c} grids matching the Scrapyard rules.");
 
         }
 
-        [Command("list", "List potental removals")]
+        [Command("list", "List potential removals")]
         [Permission(MyPromoteLevel.Admin)]
         public void List()
         {
             Log.Info("list command");
             CommandImp.GridData gridData;
             gridData = CommandImp.FilteredGridData();
-            respondGridData(gridData, "List Deletable", false, false, false, true);
+            respondGridData(gridData, "List Deletable", false, false, false, false, true);
         }
 
-        [Command("list nop", "List potental removals ignoring players")]
+        [Command("list nop", "List potential removals ignoring players")]
         [Permission(MyPromoteLevel.Admin)]
         public void ListNop()
         {
             Log.Info("list nop command");
             CommandImp.GridData gridData;
             gridData = CommandImp.FilteredGridData();
-            respondGridData(gridData,"List Deletable Ignoring Players", true, false, false, true);
+            respondGridData(gridData,"List Deletable Ignoring Players", true, false, false, false, true);
         }
 
         [Command("list all", "List all grids considered")]
@@ -87,7 +89,7 @@ namespace Sclean.Commands
             Log.Info("list all command");
             CommandImp.GridData gridData;
             gridData = CommandImp.FilteredGridData();
-            respondGridData(gridData, "List All", true, true, true, true);
+            respondGridData(gridData, "List All", true, true, true, true, true);
         }
 
         [Command("list prot", "List all grids that are protected from deletion.")]
@@ -97,7 +99,7 @@ namespace Sclean.Commands
             Log.Info("list prot command");
             CommandImp.GridData gridData;
             gridData = CommandImp.FilteredGridData();
-            respondGridData(gridData, "List Protected", true, true, true, false);
+            respondGridData(gridData, "List Protected", true, true, true, true, false);
         }
 
         [Command("stats prot", "Stats of player's protected grid sizes'. Add say at the end to send to chat")]
@@ -112,7 +114,7 @@ namespace Sclean.Commands
             }
             CommandImp.GridData gridData;
             gridData = CommandImp.FilteredGridData();
-            statsGridData(gridData, toChat, "Stats Protected Grids",true,true,true,false);
+            statsGridData(gridData, toChat, "Stats Protected Grids",true,true,true, true,false);
         }
 
         [Command("stats prot nop", "Stats of player's protected grid sizes' ignoring players. Add say at the end to send to chat")]
@@ -127,10 +129,10 @@ namespace Sclean.Commands
             }
             CommandImp.GridData gridData;
             gridData = CommandImp.FilteredGridData();
-            statsGridData(gridData, toChat, "Stats Protected Grids Ignoring Players", false, true, true, false);
+            statsGridData(gridData, toChat, "Stats Protected Grids Ignoring Players", false, true, true, true, false);
         }
 
-        private void respondGridData(CommandImp.GridData gridData, string title, bool selectPlayer, bool selectBeacon, bool selectPowered, bool selectNone)
+        private void respondGridData(CommandImp.GridData gridData, string title, bool selectPlayer, bool selectBeacon, bool selectPowered, bool selectProtectedNpc, bool selectNone)
         {
             Context.Respond(title);
             
@@ -145,7 +147,7 @@ namespace Sclean.Commands
 
             foreach (var gridGroupInfo in gridData.GridGroupInfos)
             {
-                if (!gridGroupInfo.Protector.Selection(selectPlayer, selectBeacon, selectPowered, selectNone))
+                if (!gridGroupInfo.Protector.Selection(selectPlayer, selectBeacon, selectPowered, selectProtectedNpc, selectNone))
                     continue;
 
                 ++g;
@@ -249,7 +251,16 @@ namespace Sclean.Commands
             }
         }
 
-        private void statsGridData(CommandImp.GridData gridData, bool toChat, string title, bool selectPlayer, bool selectBeacon, bool selectPowered, bool selectNone)
+        private void statsGridData(
+            CommandImp.GridData gridData,
+            bool toChat,
+            string title,
+            bool selectPlayer,
+            bool selectBeacon,
+            bool selectPowered,
+            bool selectProtectedNpc,
+            bool selectNone
+        )
         {
             string playerName = "";
             List<PlayerStat> stats = new List<PlayerStat>();
@@ -259,7 +270,7 @@ namespace Sclean.Commands
 
             foreach (var gridGroupInfo in gridData.GridGroupInfos)
             {
-                if (!gridGroupInfo.Protector.Selection(selectPlayer, selectBeacon, selectPowered, selectNone))
+                if (!gridGroupInfo.Protector.Selection(selectPlayer, selectBeacon, selectPowered, selectProtectedNpc, selectNone))
                     continue;
 
                 playerName = gridGroupInfo.Protector.OwnerName;
@@ -337,12 +348,19 @@ namespace Sclean.Commands
         }
 
 
-        private int deleteGrids(CommandImp.GridData gridData, bool selectPlayer, bool selectBeacon, bool selectPowered, bool selectNone)
+        private int deleteGrids(
+            CommandImp.GridData gridData,
+            bool selectPlayer,
+            bool selectBeacon,
+            bool selectPowered,
+            bool selectProtectedNpc,
+            bool selectNone
+        )
         {
             var c = 0;
             foreach (var gridGroupInfo in gridData.GridGroupInfos)
             {
-                if (!gridGroupInfo.Protector.Selection(selectPlayer, selectBeacon, selectPowered, selectNone))
+                if (!gridGroupInfo.Protector.Selection(selectPlayer, selectBeacon, selectPowered, selectProtectedNpc, selectNone))
                     continue;
 
                 foreach (var grid in gridGroupInfo.GridGroup)

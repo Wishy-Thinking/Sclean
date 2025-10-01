@@ -16,5 +16,9 @@ namespace Sclean
         private int _scrapBeaconRange = 250;
         [Display(Name = "Scrap Beacon", GroupName = "Protection Range", Description = "Radius of the protection AOE")]
         public int ScrapBeaconRange { get => _scrapBeaconRange; set => SetValue(ref _scrapBeaconRange, value); }
+
+        private bool _ignoreProtectedNpc = true;
+        [Display(Name = "Ignore Protected NPCs", Description = "If enabled, grids owned by trade factions or Factorum will not be deleted.")]
+        public bool IgnoreProtectedNpc { get => _ignoreProtectedNpc; set => SetValue(ref _ignoreProtectedNpc, value); }
     }
 }

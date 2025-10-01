@@ -111,7 +111,7 @@ namespace Sclean.Commands
             public ProtectionTypeEnum ProtectionType = ProtectionTypeEnum.None;
 
 
-            public bool Selection( bool selectPlayer, bool selectBeacon, bool selectPowered, bool selectNone)
+            public bool Selection( bool selectPlayer, bool selectBeacon, bool selectPowered, bool selectProtectedNpc, bool selectNone)
             {
                 if (selectPlayer && ProtectionType == ProtectionTypeEnum.Player)
                     return true;
@@ -120,7 +120,10 @@ namespace Sclean.Commands
                     return true;
 
                 if (selectPowered && ProtectionType == ProtectionTypeEnum.Powered)
-                    return true; 
+                    return true;
+
+                if (selectProtectedNpc && ProtectionType == ProtectionTypeEnum.ProtectedNpc)
+                    return true;
                 
                 if (selectNone && ProtectionType == ProtectionTypeEnum.None)
                     return true;
@@ -135,7 +138,8 @@ namespace Sclean.Commands
             None,
             Beacon,
             Player,
-            Powered
+            Powered,
+            ProtectedNpc
         }
 
         public class GridGroupInfo : IComparable<GridGroupInfo> 
@@ -193,7 +197,10 @@ namespace Sclean.Commands
             {
                 //Due to the locking do two stages, first does all the filtering and takes a long time. Second is a quick add to results.
                 bool isPowered = false;
+                bool isProtectedNpc = false;
                 long powerOwnerId = 0;
+                long protectedNpcOwnerId = 0;
+                string protectedNpcOwnerName = "";
                 foreach (var node in group.Nodes.Where(x => x.NodeData.Projector == null))
                 {
                     MyCubeGrid grid = node.NodeData;
@@ -213,8 +220,17 @@ namespace Sclean.Commands
                     {
                         isPowered = true;
                         powerOwnerId = gridInfo.OwnerId;
+                        protectedNpcOwnerName = gridInfo.OwnerName;
                     }
                     //Log.Info($"Grid: {node.NodeData.DisplayName} use: {use} #Beacons: {gridInfo.BeaconPositions.Count} Owner: {gridInfo.Owner} IsPowered: {gridInfo.IsPowered}");
+                    
+                    // Owned by protected NPC and option is enabled
+                    if (gridInfo.Owner == OwnerType.ProtectedNpc && ScleanPlugin.Instance.Config.IgnoreProtectedNpc)
+                    {
+                        isProtectedNpc = true;
+                        protectedNpcOwnerId = gridInfo.OwnerId;
+                        protectedNpcOwnerName = gridInfo.OwnerName;
+                    }
                 }
 
                 List<MyCubeGrid> gridGroup = new List<MyCubeGrid>();
@@ -235,6 +251,13 @@ namespace Sclean.Commands
                 {
                     gridGroupInfo.Protector.ProtectionType = ProtectionTypeEnum.Powered;
                     gridGroupInfo.Protector.OwnerId = powerOwnerId;
+                    gridGroupInfo.Protector.OwnerName = protectedNpcOwnerName;
+                }
+                else if (isProtectedNpc)
+                {
+                    gridGroupInfo.Protector.ProtectionType = ProtectionTypeEnum.ProtectedNpc;
+                    gridGroupInfo.Protector.OwnerId = protectedNpcOwnerId;
+                    gridGroupInfo.Protector.OwnerName = protectedNpcOwnerName;
                 }
 
                 lock (gridGroupInfos)
@@ -258,6 +281,7 @@ namespace Sclean.Commands
             public bool IsPowered;
             public OwnerType Owner;
             public long OwnerId;
+            public string OwnerName;
         }
 
         /// <summary>
@@ -267,6 +291,7 @@ namespace Sclean.Commands
         {
             Nobody,
             NPC,
+            ProtectedNpc,  // Trade faction CEO or Factorum
             Player
         }
 
@@ -302,11 +327,19 @@ namespace Sclean.Commands
             MyResourceSourceComponent? component;
             string endsWith = ScleanPlugin.Instance.Config.BeaconSubtype;
             gridInfo.OwnerId = FindOwner(grid.BigOwners);
+            gridInfo.OwnerName = GetOwnerName(gridInfo.OwnerId);
 
             if (gridInfo.OwnerId == 0L)
                 gridInfo.Owner = OwnerType.Nobody;
             else if (MySession.Static.Players.IdentityIsNpc(gridInfo.OwnerId))
-                gridInfo.Owner = OwnerType.NPC;
+                if (gridInfo.OwnerName.EndsWith("CEO") || gridInfo.OwnerName.Equals("Factorum"))
+                {
+                    gridInfo.Owner = OwnerType.ProtectedNpc;
+                }
+                else
+                {
+                    gridInfo.Owner = OwnerType.NPC;
+                }
             else
                 gridInfo.Owner = OwnerType.Player;
 
@@ -323,7 +356,7 @@ namespace Sclean.Commands
                         Position = block.PositionComp.GetPosition(),
                         Name = grid.DisplayName,
                         OwnerId = gridInfo.OwnerId,
-                        OwnerName = GetOwnerName(gridInfo.OwnerId)
+                        OwnerName = gridInfo.OwnerName
                     });
                 }
 
