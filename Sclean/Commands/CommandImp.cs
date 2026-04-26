@@ -299,7 +299,7 @@ namespace Sclean.Commands
             };
 
             MyResourceSourceComponent? component;
-            var protectionSubtypes = ScleanPlugin.Instance.Config.ProtectionSubtypes;
+            var protectionSubtypes = ScleanPlugin.Instance.Config.ProtectedSubtypes;
             gridInfo.OwnerId = FindOwner(grid.BigOwners);
 
             if (gridInfo.OwnerId == 0L)
@@ -309,7 +309,7 @@ namespace Sclean.Commands
             else
                 gridInfo.Owner = OwnerType.Player;
 
-            foreach (var block in ((MyCubeGrid)grid).GetFatBlocks())
+            foreach (var block in grid.GetFatBlocks())
             {
                 //Log.Info($"grid name>{grid.DisplayName} TypeId: {block.BlockDefinition.Id.TypeId.ToString()}");
                 var subtypeId = block.BlockDefinition.Id.SubtypeId.ToString();
