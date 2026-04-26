@@ -2,7 +2,6 @@
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.World;
-using System.Windows.Controls;
 using VRageMath;
 
 namespace Sclean.Commands
@@ -180,7 +179,7 @@ namespace Sclean.Commands
         }
 
         /// <summary>
-        /// Scan all the grids to find those elegable for removal by grid features (powered etc) and Scrap Beacon positions.
+        /// Scan all the grids to find those eligible for removal by grid features (powered etc) and Scrap Beacon positions.
         /// </summary>
         /// <returns></returns>
         public static GridData GetGridData()
