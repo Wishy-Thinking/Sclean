@@ -299,7 +299,7 @@ namespace Sclean.Commands
             };
 
             MyResourceSourceComponent? component;
-            var protectedSubtypes = ScleanPlugin.Instance.Config.ProtectedSubtypes;
+            var protectionSubtypes = ScleanPlugin.Instance.Config.ProtectionSubtypes;
             gridInfo.OwnerId = FindOwner(grid.BigOwners);
 
             if (gridInfo.OwnerId == 0L)
@@ -313,7 +313,7 @@ namespace Sclean.Commands
             {
                 //Log.Info($"grid name>{grid.DisplayName} TypeId: {block.BlockDefinition.Id.TypeId.ToString()}");
                 var subtypeId = block.BlockDefinition.Id.SubtypeId.ToString();
-                if (protectedSubtypes.Any(subtypeId.EndsWith))
+                if (protectionSubtypes.Any(subtypeId.EndsWith))
                 {
                     //Log.Info($"grid name>{grid.DisplayName} Found SubtypeId: {block.BlockDefinition.Id.SubtypeId}");
                     gridInfo.BeaconInfos.Add(new ProtectorInfo

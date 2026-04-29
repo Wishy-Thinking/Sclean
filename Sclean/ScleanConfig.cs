@@ -12,7 +12,7 @@ namespace Sclean
 
         private void ParseSubtypes()
         {
-            _protectedSubtypes = _beaconSubtype
+            _protectionSubtypes = _beaconSubtype
                 .Split(',')
                 .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrEmpty(s))
@@ -31,8 +31,8 @@ namespace Sclean
             }
         }
 
-        public IReadOnlyList<string> ProtectedSubtypes => _protectedSubtypes;
-        private List<string> _protectedSubtypes = ["ScrapBeacon"];
+        public IReadOnlyList<string> ProtectionSubtypes => _protectionSubtypes;
+        private List<string> _protectionSubtypes = ["ScrapBeacon"];
 
         private int _playerRange = 10000;
         [Display(Name = "Player", GroupName = "Protection Range", Description = "Radius of the protection AOE")]
